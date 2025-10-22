@@ -18,7 +18,11 @@ oddsRouter.get('/sports', async (request, response) => {
       }
     })
     
-    response.json(apiResponse.data)
+    response.json({
+      data: apiResponse.data,
+      remainingRequests: apiResponse.headers['x-requests-remaining'],
+      usedRequests: apiResponse.headers['x-requests-used']
+    })
   } catch (error) {
     console.error('Error fetching sports:', error.response?.data || error.message)
     response.status(500).json({ 
