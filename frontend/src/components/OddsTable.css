@@ -1,0 +1,235 @@
+.odds-container {
+  width: 100%;
+  max-width: 1400px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.odds-header {
+  margin-bottom: 2rem;
+}
+
+.odds-header h2 {
+  font-size: 2rem;
+  margin-bottom: 1.5rem;
+  color: #fff;
+  font-weight: 700;
+}
+
+.sport-selector {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.sport-btn {
+  padding: 0.75rem 1.5rem;
+  border: 2px solid #646cff;
+  background: transparent;
+  color: #fff;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.sport-btn:hover {
+  background: #646cff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(100, 108, 255, 0.3);
+}
+
+.sport-btn.active {
+  background: #646cff;
+  box-shadow: 0 4px 12px rgba(100, 108, 255, 0.4);
+}
+
+.game-count {
+  font-size: 0.85rem;
+  opacity: 0.8;
+  font-weight: 500;
+}
+
+.loading, .error, .no-odds {
+  text-align: center;
+  padding: 3rem;
+  font-size: 1.1rem;
+  color: #999;
+}
+
+.error {
+  color: #ff6b6b;
+}
+
+.retry-btn {
+  margin-top: 1rem;
+  padding: 0.75rem 1.5rem;
+  background: #646cff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.retry-btn:hover {
+  background: #535bf2;
+  transform: translateY(-2px);
+}
+
+.table-wrapper {
+  overflow-x: auto;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.odds-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: rgba(30, 30, 30, 0.8);
+  backdrop-filter: blur(10px);
+}
+
+.odds-table thead {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.odds-table th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+  color: #fff;
+  border-bottom: 3px solid rgba(255, 255, 255, 0.1);
+}
+
+.odds-table tbody tr {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.3s ease;
+}
+
+.odds-table tbody tr:hover {
+  background: rgba(100, 108, 255, 0.15);
+  transform: scale(1.01);
+  box-shadow: 0 2px 8px rgba(100, 108, 255, 0.2);
+}
+
+.odds-table td {
+  padding: 1rem;
+  color: #e0e0e0;
+}
+
+.game-title {
+  font-weight: 600;
+}
+
+.matchup {
+  font-size: 0.95rem;
+  color: #fff;
+}
+
+.game-date {
+  color: #aaa;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.team-name {
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+.team-name.home {
+  color: #4fc3f7;
+}
+
+.team-name.away {
+  color: #ff9800;
+}
+
+.odds {
+  text-align: center;
+  font-weight: 700;
+}
+
+.odds-value {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 1.1rem;
+  min-width: 70px;
+}
+
+.odds-value.positive {
+  background: rgba(76, 175, 80, 0.2);
+  color: #81c784;
+  border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.odds-value.negative {
+  background: rgba(244, 67, 54, 0.2);
+  color: #e57373;
+  border: 1px solid rgba(244, 67, 54, 0.3);
+}
+
+.bookmaker {
+  color: #9e9e9e;
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
+/* Responsive design */
+@media (max-width: 1200px) {
+  .odds-table {
+    font-size: 0.9rem;
+  }
+  
+  .odds-table th,
+  .odds-table td {
+    padding: 0.75rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .odds-container {
+    padding: 0 0.5rem;
+  }
+
+  .odds-header h2 {
+    font-size: 1.5rem;
+  }
+
+  .sport-selector {
+    gap: 0.5rem;
+  }
+
+  .sport-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+  }
+
+  .table-wrapper {
+    border-radius: 8px;
+  }
+
+  .odds-table {
+    font-size: 0.8rem;
+  }
+
+  .odds-table th,
+  .odds-table td {
+    padding: 0.5rem;
+  }
+
+  .odds-value {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.95rem;
+    min-width: 60px;
+  }
+}
+

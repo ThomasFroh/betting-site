@@ -2,6 +2,7 @@ const config = require('./utils/config')
 const express = require('express')
 const cors = require('cors')
 const loginRouter = require('./controllers/loginController')
+const oddsRouter = require('./controllers/oddsController')
 const logger = require('./utils/logger')
 const middleware = require('./utils/middleware')
 const path = require('path')
@@ -13,6 +14,7 @@ app.use(cors())
 app.use(express.json())
 
 app.use('/api/login', loginRouter)
+app.use('/api/odds', oddsRouter)
 
 // Serve React build in production
 if (config.NODE_ENV === 'production') {

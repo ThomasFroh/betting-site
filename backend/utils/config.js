@@ -21,5 +21,6 @@ const DB_NAME = process.env.DB_NAME
 const PORT = process.env.PORT || 3001
 const NODE_ENV = process.env.NODE_ENV || 'development'
 const SECRET = process.env.SECRET
+const ODDS_API_KEY = process.env.ODDS_API_KEY
 
-module.exports = { DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, PORT, NODE_ENV, SECRET }
+module.exports = { DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, PORT, NODE_ENV, SECRET, ODDS_API_KEY }

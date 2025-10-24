@@ -1,14 +1,12 @@
 import LoginForm from './components/LoginForm'
 import RegisterForm from './components/RegisterForm'
+import OddsTable from './components/OddsTable'
 import loginService from './services/loginService'
 import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import './App.css'
 
 function App() {
   const [user, setUser] = useState(null)
-  const [count, setCount] = useState(0)
 
   const handleLogin = async ({ username, password }) => {
     try {
@@ -16,7 +14,7 @@ function App() {
             username,
             password
         })
-        window.localStorage.setItem('loggedNoteAppUser', JSON.stringify(user))
+        window.localStorage.setItem('loggedBettingAppUser', JSON.stringify(user))
         // noteService.setToken(user.token)
         setUser(user)
     } catch (err) {
@@ -28,7 +26,7 @@ function App() {
   const handleRegister = async ({ id, username, password }) => {
       try {
           const user = await loginService.register({ id, username, password })
-          window.localStorage.setItem('loggedNoteAppUser', JSON.stringify(user))
+          window.localStorage.setItem('loggedBettingAppUser', JSON.stringify(user))
           // noteService.setToken(user.token)
           setUser(user)
       }
@@ -39,37 +37,27 @@ function App() {
   }
 
   const handleLogout = () => {
-      window.localStorage.removeItem('loggedNoteAppUser')
+      window.localStorage.removeItem('loggedBettingAppUser')
       setUser(null)
   }
 
   return (
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+      <div className="app-header">
+        <h1>🎰 Sports Betting Hub</h1>
+        <div className="auth-section">
+          {!user && <LoginForm onLogin={handleLogin} />}
+          {!user && <RegisterForm onRegister={handleRegister} />}
+          {user && (
+            <div className="user-info">
+              <span>Welcome, {user.username}!</span>
+              <button onClick={handleLogout} className="logout-btn">Logout</button>
+            </div>
+          )}
+        </div>
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-      <div>
-        {!user && <LoginForm onLogin={handleLogin} />}
-        {!user && <RegisterForm onRegister={handleRegister} />}
-        {user && <button onClick={handleLogout}>Logout</button>}
-      </div>
+      
+      <OddsTable />
     </>
   )
 }
