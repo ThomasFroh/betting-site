@@ -1,0 +1,266 @@
+.bet-form-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.bet-form-container {
+  background: white;
+  border-radius: 12px;
+  padding: 0;
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.bet-form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #eee;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 12px 12px 0 0;
+}
+
+.bet-form-header h3 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.close-btn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.bet-details {
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #eee;
+}
+
+.game-info {
+  text-align: center;
+}
+
+.bet-selection {
+  margin: 10px 0;
+  font-size: 1.1rem;
+  color: #495057;
+}
+
+.odds-display {
+  font-size: 1.2rem;
+  margin-top: 10px;
+}
+
+.odds {
+  font-weight: bold;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background-color: #e9ecef;
+}
+
+.odds.positive {
+  color: #28a745;
+  background-color: #d4edda;
+}
+
+.odds.negative {
+  color: #dc3545;
+  background-color: #f8d7da;
+}
+
+.bet-form {
+  padding: 20px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #495057;
+}
+
+.input-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.currency {
+  position: absolute;
+  left: 12px;
+  color: #6c757d;
+  font-weight: 600;
+  z-index: 1;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 12px 12px 12px 28px;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  transition: border-color 0.2s;
+}
+
+.input-group input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.balance-info {
+  margin-top: 8px;
+  font-size: 0.9rem;
+  color: #6c757d;
+}
+
+.quick-bet-buttons {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.quick-bet-buttons button {
+  flex: 1;
+  min-width: 60px;
+  padding: 10px;
+  border: 2px solid #e9ecef;
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.quick-bet-buttons button:hover {
+  border-color: #667eea;
+  background-color: #f8f9ff;
+}
+
+.quick-bet-buttons button:active {
+  background-color: #667eea;
+  color: white;
+}
+
+.payout-info {
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 20px;
+}
+
+.payout-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.payout-row:last-child {
+  margin-bottom: 0;
+}
+
+.payout-row strong {
+  color: #28a745;
+  font-size: 1.1rem;
+}
+
+.error-message {
+  background-color: #f8d7da;
+  color: #721c24;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  border: 1px solid #f5c6cb;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.cancel-btn, .place-bet-btn {
+  flex: 1;
+  padding: 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 1rem;
+}
+
+.cancel-btn {
+  background: #6c757d;
+  color: white;
+  border: none;
+}
+
+.cancel-btn:hover {
+  background: #5a6268;
+}
+
+.place-bet-btn {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  color: white;
+  border: none;
+}
+
+.place-bet-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #218838 0%, #1aa179 100%);
+  transform: translateY(-1px);
+}
+
+.place-bet-btn:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+  transform: none;
+}
+
+@media (max-width: 480px) {
+  .bet-form-container {
+    width: 95%;
+    margin: 20px;
+  }
+  
+  .quick-bet-buttons {
+    justify-content: center;
+  }
+  
+  .quick-bet-buttons button {
+    flex: 0 0 auto;
+    min-width: 50px;
+  }
+}

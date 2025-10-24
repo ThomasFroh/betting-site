@@ -1,12 +1,14 @@
 import LoginForm from './components/LoginForm'
 import RegisterForm from './components/RegisterForm'
 import OddsTable from './components/OddsTable'
+import BettingHistory from './components/BettingHistory'
 import loginService from './services/loginService'
 import { useState } from 'react'
 import './App.css'
 
 function App() {
   const [user, setUser] = useState(null)
+  const [activeTab, setActiveTab] = useState('odds')
 
   const handleLogin = async ({ username, password }) => {
     try {
@@ -57,7 +59,25 @@ function App() {
         </div>
       </div>
       
-      <OddsTable />
+      {user && (
+        <div className="main-navigation">
+          <button 
+            className={activeTab === 'odds' ? 'nav-btn active' : 'nav-btn'}
+            onClick={() => setActiveTab('odds')}
+          >
+            Available Bets
+          </button>
+          <button 
+            className={activeTab === 'history' ? 'nav-btn active' : 'nav-btn'}
+            onClick={() => setActiveTab('history')}
+          >
+            My Bets
+          </button>
+        </div>
+      )}
+      
+      {activeTab === 'odds' && <OddsTable user={user} />}
+      {activeTab === 'history' && <BettingHistory user={user} />}
     </>
   )
 }

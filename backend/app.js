@@ -3,6 +3,7 @@ const express = require('express')
 const cors = require('cors')
 const loginRouter = require('./controllers/loginController')
 const oddsRouter = require('./controllers/oddsController')
+const betRouter = require('./controllers/betController')
 const logger = require('./utils/logger')
 const middleware = require('./utils/middleware')
 const path = require('path')
@@ -15,6 +16,7 @@ app.use(express.json())
 
 app.use('/api/login', loginRouter)
 app.use('/api/odds', oddsRouter)
+app.use('/api/bets', betRouter)
 
 // Serve React build in production
 if (config.NODE_ENV === 'production') {
