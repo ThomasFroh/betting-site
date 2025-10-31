@@ -173,7 +173,7 @@ const BettingHistory = ({ user }) => {
                   {bet.status === 'won' && (
                     <div className="amount-row profit">
                       <span>Profit:</span>
-                      <strong>${(bet.potentialPayout - bet.betAmount).toFixed(2)}</strong>
+                      <strong>${(parseFloat(bet.potentialPayout) - parseFloat(bet.betAmount)).toFixed(2)}</strong>
                     </div>
                   )}
                 </div>

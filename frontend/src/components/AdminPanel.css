@@ -1,0 +1,193 @@
+.admin-panel {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+}
+
+.admin-panel h2 {
+  color: #333;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.error-message {
+  background-color: #fee;
+  color: #c33;
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  border: 1px solid #fcc;
+}
+
+.success-message {
+  background-color: #efe;
+  color: #3c3;
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  border: 1px solid #cfc;
+}
+
+.settlement-controls {
+  background-color: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 30px;
+  border: 1px solid #e9ecef;
+}
+
+.settlement-controls h3 {
+  margin-top: 0;
+  color: #495057;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+  color: #495057;
+}
+
+.form-group select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.settle-button {
+  background-color: #007bff;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  margin-top: 10px;
+}
+
+.settle-button:hover:not(:disabled) {
+  background-color: #0056b3;
+}
+
+.settle-button:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+.pending-bets h3 {
+  color: #495057;
+  margin-bottom: 20px;
+}
+
+.event-group {
+  background-color: white;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.event-group h4 {
+  background-color: #f8f9fa;
+  margin: 0;
+  padding: 15px 20px;
+  border-bottom: 1px solid #dee2e6;
+  color: #495057;
+}
+
+.event-actions {
+  padding: 15px 20px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+  display: flex;
+  gap: 10px;
+}
+
+.action-button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.action-button.home-win {
+  background-color: #28a745;
+  color: white;
+}
+
+.action-button.home-win:hover {
+  background-color: #218838;
+}
+
+.action-button.away-win {
+  background-color: #dc3545;
+  color: white;
+}
+
+.action-button.away-win:hover {
+  background-color: #c82333;
+}
+
+.action-button.small {
+  padding: 4px 8px;
+  font-size: 12px;
+  margin-right: 5px;
+}
+
+.bets-table {
+  overflow-x: auto;
+}
+
+.bets-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.bets-table th,
+.bets-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.bets-table th {
+  background-color: #f8f9fa;
+  font-weight: bold;
+  color: #495057;
+}
+
+.bets-table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.bets-table td:last-child {
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .admin-panel {
+    padding: 10px;
+  }
+  
+  .event-actions {
+    flex-direction: column;
+  }
+  
+  .bets-table {
+    font-size: 12px;
+  }
+  
+  .bets-table th,
+  .bets-table td {
+    padding: 8px 4px;
+  }
+}

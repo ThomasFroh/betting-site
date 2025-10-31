@@ -1,6 +1,6 @@
 import axios from 'axios'
-
-const baseUrl = 'http://localhost:3001/api/bets'
+// eslint-disable-next-line no-undef
+const baseUrl = process.env.NODE_ENV === 'production' ? '/api/bets' : 'http://localhost:3001/api/bets'
 
 const getBettingHistory = async (userId, status = 'all', limit = 50, offset = 0) => {
   const response = await axios.get(`${baseUrl}/history/${userId}`, {

@@ -21,6 +21,11 @@ const User = sequelize.define('user', { // Changed model name to 'user'
         defaultValue: 1000.00,
         allowNull: false,
     },
+    role: {
+        type: DataTypes.ENUM('user', 'admin'),
+        defaultValue: 'user',
+        allowNull: false,
+    },
 }, {
     tableName: 'user', // Explicitly specify the table name
     timestamps: true, // Enable automatic createdAt and updatedAt fields

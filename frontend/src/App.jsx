@@ -2,6 +2,7 @@ import LoginForm from './components/LoginForm'
 import RegisterForm from './components/RegisterForm'
 import OddsTable from './components/OddsTable'
 import BettingHistory from './components/BettingHistory'
+import AdminPanel from './components/AdminPanel'
 import loginService from './services/loginService'
 import { useState } from 'react'
 import './App.css'
@@ -73,11 +74,20 @@ function App() {
           >
             My Bets
           </button>
+          {user.role === 'admin' && (
+            <button 
+              className={activeTab === 'admin' ? 'nav-btn active' : 'nav-btn'}
+              onClick={() => setActiveTab('admin')}
+            >
+              Admin Panel
+            </button>
+          )}
         </div>
       )}
       
       {activeTab === 'odds' && <OddsTable user={user} />}
       {activeTab === 'history' && <BettingHistory user={user} />}
+      {activeTab === 'admin' && user.role === 'admin' && <AdminPanel />}
     </>
   )
 }

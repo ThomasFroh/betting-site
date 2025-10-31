@@ -1,6 +1,7 @@
 const Bet = require('../models/bet')
 const User = require('../models/user')
 const { Op } = require('sequelize')
+const { requireAdmin } = require('../utils/adminAuth')
 
 const betRouter = require('express').Router()
 
@@ -205,6 +206,181 @@ betRouter.get('/pending/:userId', async (request, response) => {
     })
     
     response.json({ data: pendingBets })
+  } catch (error) {
+    console.error('Error fetching pending bets:', error)
+    response.status(500).json({ 
+      error: 'Failed to fetch pending bets',
+      details: error.message
+    })
+  }
+})
+
+// Settle a bet (mark as won or lost and process payout)
+betRouter.put('/settle/:betId', requireAdmin, async (request, response) => {
+  try {
+    const { betId } = request.params
+    const { result } = request.body // 'home_win' or 'away_win'
+    
+    if (!result || !['home_win', 'away_win'].includes(result)) {
+      return response.status(400).json({ 
+        error: 'Invalid result. Must be "home_win" or "away_win"' 
+      })
+    }
+    
+    const bet = await Bet.findByPk(betId)
+    if (!bet) {
+      return response.status(404).json({ error: 'Bet not found' })
+    }
+    
+    if (bet.status !== 'pending') {
+      return response.status(400).json({ 
+        error: 'Bet has already been settled' 
+      })
+    }
+    
+    // Determine if bet won or lost
+    const won = bet.betType === result
+    const newStatus = won ? 'won' : 'lost'
+    
+    // Update bet status
+    await bet.update({
+      status: newStatus,
+      settledAt: new Date()
+    })
+    
+    // Process payout if bet won
+    if (won) {
+      const user = await User.findByPk(bet.userId)
+      await user.update({
+        balance: user.balance + bet.potentialPayout
+      })
+      
+      response.json({
+        data: bet,
+        payout: bet.potentialPayout,
+        newBalance: user.balance + bet.potentialPayout,
+        message: `Bet won! Payout: $${bet.potentialPayout.toFixed(2)}`
+      })
+    } else {
+      response.json({
+        data: bet,
+        payout: 0,
+        message: 'Bet lost'
+      })
+    }
+  } catch (error) {
+    console.error('Error settling bet:', error)
+    response.status(500).json({ 
+      error: 'Failed to settle bet',
+      details: error.message
+    })
+  }
+})
+
+// Settle all pending bets for a specific event
+betRouter.put('/settle-event/:eventId', requireAdmin, async (request, response) => {
+  try {
+    const { eventId } = request.params
+    const { result } = request.body // 'home_win' or 'away_win'
+    
+    if (!result || !['home_win', 'away_win'].includes(result)) {
+      return response.status(400).json({ 
+        error: 'Invalid result. Must be "home_win" or "away_win"' 
+      })
+    }
+    
+    // Find all pending bets for this event
+    const pendingBets = await Bet.findAll({
+      where: {
+        eventId: eventId,
+        status: 'pending'
+      },
+      include: [{
+        model: User,
+        attributes: ['id', 'balance']
+      }]
+    })
+    
+    if (pendingBets.length === 0) {
+      return response.json({ 
+        message: 'No pending bets found for this event',
+        settledBets: 0
+      })
+    }
+    
+    const settlementResults = []
+    let totalPayouts = 0
+    
+    // Process each bet
+    for (const bet of pendingBets) {
+      const won = bet.betType === result
+      const newStatus = won ? 'won' : 'lost'
+      
+      // Update bet status
+      await bet.update({
+        status: newStatus,
+        settledAt: new Date()
+      })
+      
+      if (won) {
+        // Process payout
+        const user = bet.User
+        await user.update({
+          balance: user.balance + bet.potentialPayout
+        })
+        totalPayouts += bet.potentialPayout
+      }
+      
+      settlementResults.push({
+        betId: bet.id,
+        userId: bet.userId,
+        betType: bet.betType,
+        result: newStatus,
+        payout: won ? bet.potentialPayout : 0
+      })
+    }
+    
+    response.json({
+      message: `Settled ${pendingBets.length} bets for event ${eventId}`,
+      settledBets: pendingBets.length,
+      totalPayouts: totalPayouts,
+      results: settlementResults
+    })
+  } catch (error) {
+    console.error('Error settling event bets:', error)
+    response.status(500).json({ 
+      error: 'Failed to settle event bets',
+      details: error.message
+    })
+  }
+})
+
+// Get all pending bets (admin function)
+betRouter.get('/admin/pending', requireAdmin, async (request, response) => {
+  try {
+    const { eventId, limit = 100, offset = 0 } = request.query
+    
+    const whereClause = { status: 'pending' }
+    if (eventId) {
+      whereClause.eventId = eventId
+    }
+    
+    const pendingBets = await Bet.findAndCountAll({
+      where: whereClause,
+      include: [{
+        model: User,
+        attributes: ['id', 'username', 'email']
+      }],
+      order: [['eventDate', 'ASC']],
+      limit: parseInt(limit),
+      offset: parseInt(offset)
+    })
+    
+    response.json({
+      data: pendingBets.rows,
+      total: pendingBets.count,
+      hasMore: (parseInt(offset) + parseInt(limit)) < pendingBets.count
+    })
   } catch (error) {
     console.error('Error fetching pending bets:', error)
     response.status(500).json({ 

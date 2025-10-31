@@ -71,12 +71,14 @@
 .bet-selection {
   margin: 10px 0;
   font-size: 1.1rem;
-  color: #495057;
+  color: #212529;
+  font-weight: 500;
 }
 
 .odds-display {
   font-size: 1.2rem;
   margin-top: 10px;
+  color: #212529;
 }
 
 .odds {
@@ -143,7 +145,8 @@
 .balance-info {
   margin-top: 8px;
   font-size: 0.9rem;
-  color: #6c757d;
+  color: #495057;
+  font-weight: 500;
 }
 
 .quick-bet-buttons {
@@ -159,6 +162,7 @@
   padding: 10px;
   border: 2px solid #e9ecef;
   background: white;
+  color: #495057;
   border-radius: 6px;
   cursor: pointer;
   font-weight: 600;
@@ -187,6 +191,7 @@
   display: flex;
   justify-content: space-between;
   margin-bottom: 8px;
+  color: #212529;
 }
 
 .payout-row:last-child {

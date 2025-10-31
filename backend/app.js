@@ -6,6 +6,7 @@ const oddsRouter = require('./controllers/oddsController')
 const betRouter = require('./controllers/betController')
 const logger = require('./utils/logger')
 const middleware = require('./utils/middleware')
+const { initializeScheduler } = require('./utils/scheduler')
 const path = require('path')
 
 const app = express()
@@ -30,5 +31,7 @@ if (config.NODE_ENV === 'production') {
 app.use(middleware.unknownEndpoint)
 app.use(middleware.errorHandler)
 
+// Initialize the bet settlement scheduler
+initializeScheduler()
 
 module.exports = app

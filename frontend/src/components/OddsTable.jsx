@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import oddsService from '../services/oddsService'
 import betService from '../services/betService'
 import BetForm from './BetForm'
@@ -13,7 +13,9 @@ const OddsTable = ({ user }) => {
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [isFetching, setIsFetching] = useState(false)
   const [selectedSport, setSelectedSport] = useState('americanfootball_nfl')
+  const hasFetchedRef = useRef(false)
   const [showBetForm, setShowBetForm] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState(null)
   const [selectedOutcome, setSelectedOutcome] = useState(null)
@@ -27,7 +29,14 @@ const OddsTable = ({ user }) => {
   ]
 
   const fetchAllOdds = useCallback(async () => {
+    // Prevent multiple simultaneous calls or duplicate calls in StrictMode
+    if (isFetching || hasFetchedRef.current) {
+      return
+    }
+
     try {
+      setIsFetching(true)
+      hasFetchedRef.current = true
       setLoading(true)
       setError(null)
       
@@ -55,8 +64,18 @@ const OddsTable = ({ user }) => {
       setError('Failed to load odds. Please try again later.')
     } finally {
       setLoading(false)
+      setIsFetching(false)
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isFetching]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const fetchUserBalance = useCallback(async () => {
+    try {
+      const response = await betService.getUserBalance(user.id)
+      setUserBalance(parseFloat(response.balance || 0))
+    } catch (err) {
+      console.error('Error fetching user balance:', err)
+    }
+  }, [user?.id])
 
   // Fetch all sports data once on component mount
   useEffect(() => {
@@ -69,15 +88,6 @@ const OddsTable = ({ user }) => {
       fetchUserBalance()
     }
   }, [user, fetchUserBalance])
-
-  const fetchUserBalance = useCallback(async () => {
-    try {
-      const response = await betService.getUserBalance(user.id)
-      setUserBalance(response.balance)
-    } catch (err) {
-      console.error('Error fetching user balance:', err)
-    }
-  }, [user?.id])
 
   const handleBetClick = (event, outcome) => {
     if (!user) {
@@ -135,7 +145,10 @@ const OddsTable = ({ user }) => {
     return (
       <div className="odds-container">
         <div className="error">{error}</div>
-        <button onClick={fetchAllOdds} className="retry-btn">Retry</button>
+        <button onClick={() => {
+          hasFetchedRef.current = false
+          fetchAllOdds()
+        }} className="retry-btn">Retry</button>
       </div>
     )
   }

@@ -49,7 +49,7 @@ const BetForm = ({
         return
       }
 
-      if (amount > userBalance) {
+      if (amount > parseFloat(userBalance || 0)) {
         setError('Insufficient balance')
         return
       }
@@ -133,7 +133,7 @@ const BetForm = ({
               />
             </div>
             <div className="balance-info">
-              Available Balance: <strong>${userBalance.toFixed(2)}</strong>
+              Available Balance: <strong>${parseFloat(userBalance || 0).toFixed(2)}</strong>
             </div>
           </div>
 
@@ -142,7 +142,7 @@ const BetForm = ({
             <button type="button" onClick={() => handleQuickBet(10)}>$10</button>
             <button type="button" onClick={() => handleQuickBet(25)}>$25</button>
             <button type="button" onClick={() => handleQuickBet(50)}>$50</button>
-            <button type="button" onClick={() => handleQuickBet(userBalance)}>Max</button>
+            <button type="button" onClick={() => handleQuickBet(parseFloat(userBalance || 0))}>Max</button>
           </div>
 
           {potentialPayout > 0 && (
