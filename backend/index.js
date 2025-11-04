@@ -4,6 +4,7 @@ const logger = require('./utils/logger')
 const sequelize = require('./database')
 const User = require('./models/user')
 const Bet = require('./models/bet')
+const GameOdds = require('./models/gameOdds')
 
 const PORT = config.PORT || 3001
 
@@ -16,6 +17,7 @@ const initializeDatabase = async () => {
     // Sync models with database
     await User.sync({ alter: true })
     await Bet.sync({ alter: true })
+    await GameOdds.sync({ alter: true })
     logger.info('Database models synchronized')
   } catch (error) {
     logger.error('Unable to connect to the database:', error)
