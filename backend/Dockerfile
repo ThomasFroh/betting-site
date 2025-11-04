@@ -24,7 +24,7 @@
     COPY backend/ ./
     
     # Copy built frontend files into backend's public directory
-    COPY --from=frontend-build /app/frontend/build ./frontend/build
+    COPY --from=frontend-build /app/frontend/dist ./frontend/dist
     
     # Expose backend port
     EXPOSE 3001
