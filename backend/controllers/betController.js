@@ -92,7 +92,10 @@ betRouter.post('/place', async (request, response) => {
       return response.status(404).json({ error: 'User not found' })
     }
     
-    if (user.balance < betAmount) {
+    const currentBalance = parseFloat(user.balance) || 0
+    const amount = parseFloat(betAmount) || 0
+    
+    if (currentBalance < amount) {
       return response.status(400).json({ 
         error: 'Insufficient balance' 
       })
@@ -102,10 +105,10 @@ betRouter.post('/place', async (request, response) => {
     let potentialPayout
     if (odds > 0) {
       // Positive odds: payout = betAmount + (betAmount * odds / 100)
-      potentialPayout = betAmount + (betAmount * odds / 100)
+      potentialPayout = amount + (amount * odds / 100)
     } else {
       // Negative odds: payout = betAmount + (betAmount * 100 / |odds|)
-      potentialPayout = betAmount + (betAmount * 100 / Math.abs(odds))
+      potentialPayout = amount + (amount * 100 / Math.abs(odds))
     }
     
     // Create the bet
@@ -116,20 +119,21 @@ betRouter.post('/place', async (request, response) => {
       homeTeam,
       awayTeam,
       betType,
-      betAmount,
+      betAmount: amount,
       odds,
       potentialPayout,
       eventDate: new Date(eventDate)
     })
     
     // Deduct bet amount from user balance
+    const newBalance = currentBalance - amount
     await user.update({
-      balance: user.balance - betAmount
+      balance: newBalance
     })
     
     response.status(201).json({
       data: bet,
-      newBalance: user.balance - betAmount
+      newBalance: newBalance
     })
   } catch (error) {
     console.error('Error placing bet:', error)
@@ -169,8 +173,12 @@ betRouter.put('/cancel/:betId', async (request, response) => {
     
     // Refund the bet amount
     const user = await User.findByPk(userId)
+    const currentBalance = parseFloat(user.balance) || 0
+    const refundAmount = parseFloat(bet.betAmount) || 0
+    const newBalance = currentBalance + refundAmount
+    
     await user.update({
-      balance: user.balance + bet.betAmount
+      balance: newBalance
     })
     
     // Update bet status
@@ -181,7 +189,7 @@ betRouter.put('/cancel/:betId', async (request, response) => {
     
     response.json({
       data: bet,
-      newBalance: user.balance + bet.betAmount
+      newBalance: newBalance
     })
   } catch (error) {
     console.error('Error cancelling bet:', error)
@@ -251,15 +259,19 @@ betRouter.put('/settle/:betId', requireAdmin, async (request, response) => {
     // Process payout if bet won
     if (won) {
       const user = await User.findByPk(bet.userId)
+      const currentBalance = parseFloat(user.balance) || 0
+      const payout = parseFloat(bet.potentialPayout) || 0
+      const newBalance = currentBalance + payout
+      
       await user.update({
-        balance: user.balance + bet.potentialPayout
+        balance: newBalance
       })
       
       response.json({
         data: bet,
-        payout: bet.potentialPayout,
-        newBalance: user.balance + bet.potentialPayout,
-        message: `Bet won! Payout: $${bet.potentialPayout.toFixed(2)}`
+        payout: payout,
+        newBalance: newBalance,
+        message: `Bet won! Payout: $${payout.toFixed(2)}`
       })
     } else {
       response.json({
@@ -325,10 +337,14 @@ betRouter.put('/settle-event/:eventId', requireAdmin, async (request, response) 
       if (won) {
         // Process payout
         const user = bet.User
+        const currentBalance = parseFloat(user.balance) || 0
+        const payout = parseFloat(bet.potentialPayout) || 0
+        const newBalance = currentBalance + payout
+        
         await user.update({
-          balance: user.balance + bet.potentialPayout
+          balance: newBalance
         })
-        totalPayouts += bet.potentialPayout
+        totalPayouts += payout
       }
       
       settlementResults.push({

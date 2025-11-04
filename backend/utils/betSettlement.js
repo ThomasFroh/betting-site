@@ -160,10 +160,12 @@ async function processEventBets(eventId, bets, result) {
     if (won) {
       // Process payout
       const user = await User.findByPk(bet.userId)
+      const currentBalance = parseFloat(user.balance) || 0
+      const payout = parseFloat(bet.potentialPayout) || 0
       await user.update({
-        balance: user.balance + bet.potentialPayout
+        balance: currentBalance + payout
       })
-      totalPayouts += bet.potentialPayout
+      totalPayouts += payout
     }
     
     settlementResults.push({
