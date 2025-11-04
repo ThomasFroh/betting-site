@@ -1,8 +1,10 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import oddsService from '../services/oddsService'
+import betService from '../services/betService'
+import BetForm from './BetForm'
 import './OddsTable.css'
 
-const OddsTable = () => {
+const OddsTable = ({ user }) => {
   const [oddsCache, setOddsCache] = useState({
     americanfootball_nfl: null,
     americanfootball_ncaaf: null,
@@ -11,7 +13,13 @@ const OddsTable = () => {
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [isFetching, setIsFetching] = useState(false)
   const [selectedSport, setSelectedSport] = useState('americanfootball_nfl')
+  const hasFetchedRef = useRef(false)
+  const [showBetForm, setShowBetForm] = useState(false)
+  const [selectedEvent, setSelectedEvent] = useState(null)
+  const [selectedOutcome, setSelectedOutcome] = useState(null)
+  const [userBalance, setUserBalance] = useState(0)
 
   const sports = [
     { key: 'americanfootball_nfl', title: 'NFL' },
@@ -21,7 +29,14 @@ const OddsTable = () => {
   ]
 
   const fetchAllOdds = useCallback(async () => {
+    // Prevent multiple simultaneous calls or duplicate calls in StrictMode
+    if (isFetching || hasFetchedRef.current) {
+      return
+    }
+
     try {
+      setIsFetching(true)
+      hasFetchedRef.current = true
       setLoading(true)
       setError(null)
       
@@ -49,13 +64,55 @@ const OddsTable = () => {
       setError('Failed to load odds. Please try again later.')
     } finally {
       setLoading(false)
+      setIsFetching(false)
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isFetching]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const fetchUserBalance = useCallback(async () => {
+    try {
+      const response = await betService.getUserBalance(user.id)
+      setUserBalance(parseFloat(response.balance || 0))
+    } catch (err) {
+      console.error('Error fetching user balance:', err)
+    }
+  }, [user?.id])
 
   // Fetch all sports data once on component mount
   useEffect(() => {
     fetchAllOdds()
   }, [fetchAllOdds])
+
+  // Fetch user balance when user changes
+  useEffect(() => {
+    if (user) {
+      fetchUserBalance()
+    }
+  }, [user, fetchUserBalance])
+
+  const handleBetClick = (event, outcome) => {
+    if (!user) {
+      alert('Please log in to place bets')
+      return
+    }
+    
+    setSelectedEvent(event)
+    setSelectedOutcome(outcome)
+    setShowBetForm(true)
+  }
+
+  const handleBetPlaced = (result) => {
+    setUserBalance(result.newBalance)
+    setShowBetForm(false)
+    setSelectedEvent(null)
+    setSelectedOutcome(null)
+    alert('Bet placed successfully!')
+  }
+
+  const handleCloseBetForm = () => {
+    setShowBetForm(false)
+    setSelectedEvent(null)
+    setSelectedOutcome(null)
+  }
 
   const formatDate = (dateString) => {
     const date = new Date(dateString)
@@ -88,7 +145,10 @@ const OddsTable = () => {
     return (
       <div className="odds-container">
         <div className="error">{error}</div>
-        <button onClick={fetchAllOdds} className="retry-btn">Retry</button>
+        <button onClick={() => {
+          hasFetchedRef.current = false
+          fetchAllOdds()
+        }} className="retry-btn">Retry</button>
       </div>
     )
   }
@@ -124,8 +184,8 @@ const OddsTable = () => {
                 <th>Date & Time</th>
                 <th>Home Team</th>
                 <th>Away Team</th>
-                <th>Best Home Odds</th>
-                <th>Best Away Odds</th>
+                <th>Home Odds</th>
+                <th>Away Odds</th>
                 <th>Bookmaker</th>
               </tr>
             </thead>
@@ -151,14 +211,28 @@ const OddsTable = () => {
                     <td className="team-name home">{homeTeam}</td>
                     <td className="team-name away">{awayTeam}</td>
                     <td className="odds">
-                      <span className="odds-value positive">
-                        {homeOutcome ? formatOdds(homeOutcome.price) : 'N/A'}
-                      </span>
+                      {homeOutcome ? (
+                        <button 
+                          className={`odds-button ${homeOutcome.price > 0 ? 'positive' : 'negative'}`}
+                          onClick={() => handleBetClick(event, homeOutcome)}
+                        >
+                          {formatOdds(homeOutcome.price)}
+                        </button>
+                      ) : (
+                        <span className="odds-value">N/A</span>
+                      )}
                     </td>
                     <td className="odds">
-                      <span className="odds-value negative">
-                        {awayOutcome ? formatOdds(awayOutcome.price) : 'N/A'}
-                      </span>
+                      {awayOutcome ? (
+                        <button 
+                          className={`odds-button ${awayOutcome.price > 0 ? 'positive' : 'negative'}`}
+                          onClick={() => handleBetClick(event, awayOutcome)}
+                        >
+                          {formatOdds(awayOutcome.price)}
+                        </button>
+                      ) : (
+                        <span className="odds-value">N/A</span>
+                      )}
                     </td>
                     <td className="bookmaker">{bookmaker?.title || 'N/A'}</td>
                   </tr>
@@ -167,6 +241,17 @@ const OddsTable = () => {
             </tbody>
           </table>
         </div>
+      )}
+
+      {showBetForm && (
+        <BetForm
+          event={selectedEvent}
+          selectedOutcome={selectedOutcome}
+          onBetPlaced={handleBetPlaced}
+          onClose={handleCloseBetForm}
+          userId={user?.id}
+          userBalance={userBalance}
+        />
       )}
     </div>
   )

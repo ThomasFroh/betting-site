@@ -1,6 +1,6 @@
 import axios from 'axios'
-
-const baseUrl = 'http://localhost:3001/api/odds'
+// eslint-disable-next-line no-undef
+const baseUrl = process.env.NODE_ENV === 'production' ? '/api/odds' : 'http://localhost:3001/api/odds'
 
 const getSports = async () => {
   const response = await axios.get(`${baseUrl}/sports`)

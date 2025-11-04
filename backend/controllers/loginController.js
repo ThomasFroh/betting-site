@@ -21,13 +21,14 @@ loginRouter.post('/', async (request, response) => {
   const userForToken = {
     username: user.username,
     id: user.id,
+    role: user.role,
   }
 
   const token = jwt.sign(userForToken, config.SECRET, { expiresIn: '1h' })
 
   response
     .status(200)
-    .send({ token, username: user.username, id: user.id })
+    .send({ token, username: user.username, id: user.id, role: user.role })
 })
 
 loginRouter.post('/register', async (request, response) => {
@@ -42,13 +43,14 @@ loginRouter.post('/register', async (request, response) => {
     const userForToken = {
       username: user.username,
       id: user.id,
+      role: user.role,
     }
 
     const token = jwt.sign(userForToken, config.SECRET, { expiresIn: '1h' })
 
     response
       .status(201)
-      .send({ token, username: user.username, id: user.id })
+      .send({ token, username: user.username, id: user.id, role: user.role })
   } catch (error) {
     console.error('Registration error:', error)
     response.status(400).json({ error: error.message })
