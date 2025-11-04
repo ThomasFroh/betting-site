@@ -20,12 +20,23 @@
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 }
 
+.auth-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 2rem 1rem;
+}
+
 .auth-section {
   display: flex;
-  gap: 1rem;
+  gap: 2rem;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   flex-wrap: wrap;
+  padding: 2rem 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .user-info {
@@ -103,5 +114,14 @@
   .nav-btn {
     width: 100%;
     max-width: 300px;
+  }
+
+  .auth-section {
+    gap: 1.5rem;
+    padding: 1rem 0.5rem;
+  }
+
+  .auth-container {
+    padding: 1rem 0.5rem;
   }
 }

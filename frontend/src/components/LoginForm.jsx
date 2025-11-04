@@ -1,41 +1,65 @@
 import { useState } from 'react';
-import { Form, Button } from 'react-bootstrap';
+import './LoginForm.css';
 
 const LoginForm = ({ onLogin }) => {
     const [username, setUsername] = useState('')
     const [password, setPassword] = useState('')
+    const [isSubmitting, setIsSubmitting] = useState(false)
 
     const handleSubmit = async (e) => {
         e.preventDefault()
-        await onLogin({ username, password })
-        setUsername('')
-        setPassword('')
+        setIsSubmitting(true)
+        try {
+            await onLogin({ username, password })
+            setUsername('')
+            setPassword('')
+        } catch (error) {
+            console.error('Login failed:', error)
+            alert('Invalid username or password')
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     return (
-        <div>
-            <h2>Login</h2>
-            <Form onSubmit={handleSubmit}>
-                <Form.Group>
-                    <Form.Label>Username:</Form.Label>
-                    <Form.Control 
-                        type="text" 
-                        value={username} 
-                        onChange={({ target }) => setUsername(target.value)} 
+        <div className="auth-form-card">
+            <div className="auth-form-header">
+                <h2>Login</h2>
+                <p>Welcome back! Please login to your account.</p>
+            </div>
+            <form onSubmit={handleSubmit} className="auth-form">
+                <div className="form-group">
+                    <label htmlFor="login-username">Username</label>
+                    <input
+                        id="login-username"
+                        type="text"
+                        value={username}
+                        onChange={({ target }) => setUsername(target.value)}
+                        placeholder="Enter your username"
                         required
+                        disabled={isSubmitting}
                     />
-                </Form.Group>
-                <Form.Group>
-                    <Form.Label>Password:</Form.Label>
-                    <Form.Control 
-                        type="password" 
-                        value={password} 
-                        onChange={({ target }) => setPassword(target.value)} 
+                </div>
+                <div className="form-group">
+                    <label htmlFor="login-password">Password</label>
+                    <input
+                        id="login-password"
+                        type="password"
+                        value={password}
+                        onChange={({ target }) => setPassword(target.value)}
+                        placeholder="Enter your password"
                         required
+                        disabled={isSubmitting}
                     />
-                </Form.Group>
-                <Button type="submit">Login</Button>
-            </Form>
+                </div>
+                <button 
+                    type="submit" 
+                    className="auth-submit-btn"
+                    disabled={isSubmitting}
+                >
+                    {isSubmitting ? 'Logging in...' : 'Login'}
+                </button>
+            </form>
         </div>
     )
 }
