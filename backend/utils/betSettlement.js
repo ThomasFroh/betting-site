@@ -1,6 +1,35 @@
 const Bet = require('../models/bet')
 const User = require('../models/user')
 const { Op } = require('sequelize')
+const axios = require('axios')
+const config = require('./config')
+
+const ODDS_API_BASE_URL = 'https://api.the-odds-api.com/v4'
+
+/**
+ * Extract winner from event data with scores
+ * @param {Object} eventData - Event data from The Odds API
+ * @returns {string|null} 'home_win', 'away_win', 'draw', or null if scores unavailable
+ */
+function extractWinnerFromScores(eventData) {
+  if (!eventData.scores || !Array.isArray(eventData.scores) || eventData.scores.length === 0) {
+    return null
+  }
+
+  const scores = eventData.scores
+  const homeScore = scores.find(s => s.name === eventData.home_team)?.score
+  const awayScore = scores.find(s => s.name === eventData.away_team)?.score
+
+  // Check if scores are valid numbers
+  if (homeScore !== null && homeScore !== undefined && 
+      awayScore !== null && awayScore !== undefined) {
+    if (homeScore > awayScore) return 'home_win'
+    if (awayScore > homeScore) return 'away_win'
+    return 'draw'
+  }
+
+  return null
+}
 
 /**
  * Automatically settle all bets for events that have ended
@@ -40,13 +69,54 @@ async function settleExpiredBets() {
     let totalSettled = 0
     let totalPayouts = 0
     
+    // Group events by sport for batch score fetching
+    const eventsBySport = {}
+    for (const [eventId, bets] of Object.entries(betsByEvent)) {
+      const sport = bets[0].sport
+      if (!eventsBySport[sport]) {
+        eventsBySport[sport] = []
+      }
+      eventsBySport[sport].push({ eventId, bets })
+    }
+    
+    // Fetch scores in batches by sport (more efficient)
+    const eventResults = {}
+    for (const [sport, events] of Object.entries(eventsBySport)) {
+      const eventIds = events.map(e => e.eventId)
+      console.log(`Fetching scores for ${eventIds.length} ${sport} events...`)
+      
+      try {
+        const batchResults = await fetchScoresBatch(eventIds, sport)
+        Object.assign(eventResults, batchResults)
+      } catch (error) {
+        console.error(`Error fetching batch scores for ${sport}:`, error.message)
+      }
+    }
+    
     // Process each event's bets
     for (const [eventId, bets] of Object.entries(betsByEvent)) {
       console.log(`Processing ${bets.length} bets for event ${eventId}`)
       
-      // For now, we'll mark all expired bets as lost
-      // TODO: In a real system, you'd integrate with a sports data API to get actual results
-      const result = await processEventBets(eventId, bets, 'lost') // Default to lost for expired events
+      // Get result from batch fetch
+      const eventResult = eventResults[eventId]
+      
+      // If we couldn't determine the result automatically, skip this event
+      // It will need manual settlement or can be retried later
+      if (!eventResult) {
+        console.log(`Could not determine result for event ${eventId} - skipping automatic settlement`)
+        settlementResults.push({
+          eventId,
+          settledBets: 0,
+          totalPayouts: 0,
+          skipped: true,
+          reason: 'Result not available from API'
+        })
+        continue
+      }
+      
+      // Process bets with the determined result
+      const result = await processEventBets(eventId, bets, eventResult)
+      result.determinedResult = eventResult
       
       settlementResults.push(result)
       totalSettled += result.settledBets
@@ -180,9 +250,58 @@ async function settleEventManually(eventId, result) {
   }
 }
 
+/**
+ * Fetch scores for multiple events from The Odds API scores endpoint (batch processing)
+ * @param {Array<string>} eventIds - Array of event IDs from The Odds API
+ * @param {string} sport - The sport key
+ * @returns {Promise<Object>} Map of eventId to result ('home_win', 'away_win', or null)
+ */
+async function fetchScoresBatch(eventIds, sport) {
+  const results = {}
+  
+  if (!eventIds || eventIds.length === 0) {
+    return results
+  }
+
+  try {
+    // The Odds API scores endpoint accepts comma-separated event IDs
+    const eventIdsString = eventIds.join(',')
+    
+    const response = await axios.get(`${ODDS_API_BASE_URL}/sports/${sport}/scores`, {
+      params: {
+        apiKey: config.ODDS_API_KEY,
+        eventIds: eventIdsString,
+        dateFormat: 'iso',
+        daysFrom: 1,
+      },
+      timeout: 10000
+    })
+
+    const scoresData = response.data
+
+    if (!scoresData || !Array.isArray(scoresData)) {
+      return results
+    }
+
+    // Process each event in the response
+    for (const eventData of scoresData) {
+      const eventId = eventData.id
+      const winner = extractWinnerFromScores(eventData)
+      if (winner) {
+        results[eventId] = winner
+      }
+    }
+  } catch (error) {
+    console.error(`Error fetching batch scores for sport ${sport}:`, error.response?.data || error.message)
+  }
+
+  return results
+}
+
 module.exports = {
   settleExpiredBets,
   processEventBets,
   getSettlementStats,
-  settleEventManually
+  settleEventManually,
+  fetchScoresBatch
 }
