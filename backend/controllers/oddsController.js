@@ -1,13 +1,10 @@
 const axios = require('axios')
+const { Op } = require('sequelize')
 const oddsRouter = require('express').Router()
 const config = require('../utils/config')
+const GameOdds = require('../models/gameOdds')
 
 const ODDS_API_BASE_URL = 'https://api.the-odds-api.com/v4'
-
-const americanFootballNFL = 'americanfootball_nfl' // NFL
-const americanFootballNCAAF = 'americanfootball_ncaaf' // NCAAF
-const basketballNBA = 'basketball_nba' // NBA
-const mmaUFC = 'mma_mixed_martial_arts' // UFC
 
 // Get list of in-season sports
 oddsRouter.get('/sports', async (request, response) => {
@@ -34,38 +31,40 @@ oddsRouter.get('/sports', async (request, response) => {
 
 // Get odds for a specific sport
 // Example: /api/odds/americanfootball_nfl/odds?regions=us&markets=h2h
+// Now only reads from database (odds are fetched by scheduled job)
 oddsRouter.get('/:sport/odds', async (request, response) => {
   try {
     const { sport } = request.params
-    const { 
-      regions = 'us', 
-    //   markets = 'h2h,spreads,totals', 
-      markets = 'h2h',
-      oddsFormat = 'american',
-      dateFormat = 'iso'
-    } = request.query
+    const now = new Date()
+    const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000)
 
-    const apiResponse = await axios.get(`${ODDS_API_BASE_URL}/sports/${sport}/odds`, {
-      params: {
-        apiKey: config.ODDS_API_KEY,
-        regions,
-        markets,
-        oddsFormat,
-        dateFormat
-      }
+    // Fetch odds from database only (filtered by commenceTime >= now and <= 3 days)
+    const storedOdds = await GameOdds.findAll({
+      where: {
+        sport: sport,
+        commenceTime: {
+          [Op.gte]: now, // Only future events
+          [Op.lte]: threeDaysFromNow // Within next 3 days
+        }
+      },
+      order: [['commenceTime', 'ASC']]
     })
+
+    const oddsData = storedOdds.map(odd => odd.eventData)
     
-    // Return the odds data
+    console.log(`Returning ${oddsData.length} stored odds for ${sport} (from database)`)
+    
+    // Return the odds data (already filtered by commenceTime >= now and <= 3 days)
     response.json({
-      data: apiResponse.data,
-      remainingRequests: apiResponse.headers['x-requests-remaining'],
-      usedRequests: apiResponse.headers['x-requests-used']
+      data: oddsData,
+      remainingRequests: null, // Not available when reading from DB
+      usedRequests: null
     })
   } catch (error) {
-    console.error('Error fetching odds:', error.response?.data || error.message)
+    console.error('Error fetching odds from database:', error.message)
     response.status(500).json({ 
       error: 'Failed to fetch odds',
-      details: error.response?.data || error.message
+      details: error.message
     })
   }
 })
