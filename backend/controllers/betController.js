@@ -1,32 +1,72 @@
 const Bet = require('../models/bet')
 const User = require('../models/user')
+const GameOdds = require('../models/gameOdds')
 const { Op } = require('sequelize')
-const { requireAdmin } = require('../utils/adminAuth')
+const { requireAdmin, requireAuth } = require('../utils/adminAuth')
+const {
+  isValidUUID,
+  validateInteger,
+  isValidBetStatus,
+  isValidBetType,
+  isValidEventId
+} = require('../utils/validation')
 
 const betRouter = require('express').Router()
 
+/**
+ * Helper function to verify user owns the resource
+ * Returns true if userId matches authenticated user, false otherwise
+ */
+const verifyUserOwnership = (userId, authenticatedUserId) => {
+  return userId === authenticatedUserId
+}
+
 // Get user's betting history
-betRouter.get('/history/:userId', async (request, response) => {
+betRouter.get('/history/:userId', requireAuth, async (request, response) => {
   try {
     const { userId } = request.params
     const { status, limit = 50, offset = 0 } = request.query
     
-    const whereClause = { userId }
+    // Validate userId
+    if (!isValidUUID(userId)) {
+      return response.status(400).json({ 
+        error: 'Invalid user ID format' 
+      })
+    }
+    
+    // Verify user can only access their own data
+    if (!verifyUserOwnership(userId, request.user.id)) {
+      return response.status(403).json({ 
+        error: 'Access denied. You can only access your own betting history.' 
+      })
+    }
+    
+    // Validate and sanitize query parameters
+    const validatedLimit = validateInteger(limit, 1, 100) || 50
+    const validatedOffset = validateInteger(offset, 0, 10000) || 0
+    
+    const whereClause = { userId: request.user.id } // Use authenticated user ID
+    // Validate status against allowed values
     if (status && status !== 'all') {
+      if (!isValidBetStatus(status)) {
+        return response.status(400).json({ 
+          error: 'Invalid status value' 
+        })
+      }
       whereClause.status = status
     }
     
     const bets = await Bet.findAndCountAll({
       where: whereClause,
       order: [['createdAt', 'DESC']],
-      limit: parseInt(limit),
-      offset: parseInt(offset)
+      limit: validatedLimit,
+      offset: validatedOffset
     })
     
     response.json({
       data: bets.rows,
       total: bets.count,
-      hasMore: (parseInt(offset) + parseInt(limit)) < bets.count
+      hasMore: (validatedOffset + validatedLimit) < bets.count
     })
   } catch (error) {
     console.error('Error fetching betting history:', error)
@@ -38,10 +78,25 @@ betRouter.get('/history/:userId', async (request, response) => {
 })
 
 // Get user's current balance
-betRouter.get('/balance/:userId', async (request, response) => {
+betRouter.get('/balance/:userId', requireAuth, async (request, response) => {
   try {
     const { userId } = request.params
-    const user = await User.findByPk(userId)
+    
+    // Validate userId
+    if (!isValidUUID(userId)) {
+      return response.status(400).json({ 
+        error: 'Invalid user ID format' 
+      })
+    }
+    
+    // Verify user can only access their own balance
+    if (!verifyUserOwnership(userId, request.user.id)) {
+      return response.status(403).json({ 
+        error: 'Access denied. You can only access your own balance.' 
+      })
+    }
+    
+    const user = await User.findByPk(request.user.id) // Use authenticated user ID
     
     if (!user) {
       return response.status(404).json({ error: 'User not found' })
@@ -58,7 +113,7 @@ betRouter.get('/balance/:userId', async (request, response) => {
 })
 
 // Place a new bet
-betRouter.post('/place', async (request, response) => {
+betRouter.post('/place', requireAuth, async (request, response) => {
   try {
     const {
       userId,
@@ -72,28 +127,59 @@ betRouter.post('/place', async (request, response) => {
       eventDate
     } = request.body
     
-    // Validate required fields
-    if (!userId || !eventId || !sport || !homeTeam || !awayTeam || !betType || !betAmount || !odds || !eventDate) {
+    // Validate required fields (userId is now optional since we use authenticated user)
+    if (!eventId || !sport || !homeTeam || !awayTeam || !betType || !betAmount || !odds || !eventDate) {
       return response.status(400).json({ 
         error: 'Missing required fields' 
       })
     }
     
-    // Validate bet amount
-    if (betAmount <= 0) {
-      return response.status(400).json({ 
-        error: 'Bet amount must be greater than 0' 
+    // Use authenticated user ID instead of request body userId
+    const authenticatedUserId = request.user.id
+    
+    // If userId is provided in body, verify it matches authenticated user
+    if (userId && userId !== authenticatedUserId) {
+      return response.status(403).json({ 
+        error: 'Access denied. You can only place bets for your own account.' 
       })
     }
     
-    // Get user and check balance
-    const user = await User.findByPk(userId)
+    if (!isValidEventId(eventId)) {
+      return response.status(400).json({ 
+        error: 'Invalid event ID format' 
+      })
+    }
+    
+    // Validate bet type
+    if (!isValidBetType(betType)) {
+      return response.status(400).json({ 
+        error: 'Invalid bet type' 
+      })
+    }
+    
+    // Validate bet amount
+    const amount = parseFloat(betAmount)
+    if (isNaN(amount) || amount <= 0) {
+      return response.status(400).json({ 
+        error: 'Bet amount must be a positive number' 
+      })
+    }
+    
+    // Validate odds is a number
+    const oddsNum = parseInt(odds, 10)
+    if (isNaN(oddsNum)) {
+      return response.status(400).json({ 
+        error: 'Invalid odds format' 
+      })
+    }
+    
+    // Get user and check balance (use authenticated user ID)
+    const user = await User.findByPk(authenticatedUserId)
     if (!user) {
       return response.status(404).json({ error: 'User not found' })
     }
     
     const currentBalance = parseFloat(user.balance) || 0
-    const amount = parseFloat(betAmount) || 0
     
     if (currentBalance < amount) {
       return response.status(400).json({ 
@@ -101,28 +187,91 @@ betRouter.post('/place', async (request, response) => {
       })
     }
     
-    // Calculate potential payout
-    let potentialPayout
-    if (odds > 0) {
-      // Positive odds: payout = betAmount + (betAmount * odds / 100)
-      potentialPayout = amount + (amount * odds / 100)
-    } else {
-      // Negative odds: payout = betAmount + (betAmount * 100 / |odds|)
-      potentialPayout = amount + (amount * 100 / Math.abs(odds))
+    // Validate odds against stored odds in database
+    const gameOdds = await GameOdds.findOne({
+      where: { eventId: eventId }
+    })
+    
+    if (!gameOdds) {
+      return response.status(404).json({ 
+        error: 'Event not found or odds not available' 
+      })
     }
     
-    // Create the bet
+    // Check if event has already started
+    const commenceTime = new Date(gameOdds.commenceTime)
+    if (commenceTime <= new Date()) {
+      return response.status(400).json({ 
+        error: 'Cannot place bet on event that has already started' 
+      })
+    }
+    
+    // Validate team names match stored data
+    if (gameOdds.homeTeam !== homeTeam || gameOdds.awayTeam !== awayTeam) {
+      return response.status(400).json({ 
+        error: 'Team names do not match event data' 
+      })
+    }
+    
+    // Validate sport matches
+    if (gameOdds.sport !== sport) {
+      return response.status(400).json({ 
+        error: 'Sport does not match event data' 
+      })
+    }
+    
+    // Extract actual odds from stored event data
+    const eventData = gameOdds.eventData
+    const bookmaker = eventData.bookmakers?.[0]
+    const h2hMarket = bookmaker?.markets?.find(m => m.key === 'h2h')
+    
+    if (!h2hMarket || !h2hMarket.outcomes) {
+      return response.status(400).json({ 
+        error: 'Odds data not available for this event' 
+      })
+    }
+    
+    // Determine which team the bet is for
+    const targetTeam = betType === 'home_win' ? homeTeam : awayTeam
+    const actualOutcome = h2hMarket.outcomes.find(o => o.name === targetTeam)
+    
+    if (!actualOutcome) {
+      return response.status(400).json({ 
+        error: 'Could not find odds for selected team' 
+      })
+    }
+    
+    const actualOdds = actualOutcome.price
+    
+    // Validate that submitted odds match stored odds
+    if (oddsNum !== parseInt(actualOdds, 10)) {
+      return response.status(400).json({ 
+        error: 'Odds mismatch. The odds for this event have changed. Please refresh and try again.' 
+      })
+    }
+    
+    // Calculate potential payout using validated odds
+    let potentialPayout
+    if (actualOdds > 0) {
+      // Positive odds: payout = betAmount + (betAmount * odds / 100)
+      potentialPayout = amount + (amount * actualOdds / 100)
+    } else {
+      // Negative odds: payout = betAmount + (betAmount * 100 / |odds|)
+      potentialPayout = amount + (amount * 100 / Math.abs(actualOdds))
+    }
+    
+    // Create the bet (use authenticated user ID and validated values from database)
     const bet = await Bet.create({
-      userId,
+      userId: authenticatedUserId, // Use authenticated user ID, not request body
       eventId,
-      sport,
-      homeTeam,
-      awayTeam,
+      sport: gameOdds.sport, // Use validated sport from database
+      homeTeam: gameOdds.homeTeam, // Use validated team names from database
+      awayTeam: gameOdds.awayTeam,
       betType,
       betAmount: amount,
-      odds,
+      odds: actualOdds, // Use validated odds from database
       potentialPayout,
-      eventDate: new Date(eventDate)
+      eventDate: commenceTime // Use commenceTime from GameOdds
     })
     
     // Deduct bet amount from user balance
@@ -145,15 +294,24 @@ betRouter.post('/place', async (request, response) => {
 })
 
 // Cancel a pending bet
-betRouter.put('/cancel/:betId', async (request, response) => {
+betRouter.put('/cancel/:betId', requireAuth, async (request, response) => {
   try {
     const { betId } = request.params
-    const { userId } = request.body
+    
+    // Validate betId
+    if (!isValidUUID(betId)) {
+      return response.status(400).json({ 
+        error: 'Invalid bet ID format' 
+      })
+    }
+    
+    // Use authenticated user ID
+    const authenticatedUserId = request.user.id
     
     const bet = await Bet.findOne({
       where: {
         id: betId,
-        userId: userId,
+        userId: authenticatedUserId, // Only find bets belonging to authenticated user
         status: 'pending'
       }
     })
@@ -171,8 +329,8 @@ betRouter.put('/cancel/:betId', async (request, response) => {
       })
     }
     
-    // Refund the bet amount
-    const user = await User.findByPk(userId)
+    // Refund the bet amount (use authenticated user)
+    const user = await User.findByPk(authenticatedUserId)
     const currentBalance = parseFloat(user.balance) || 0
     const refundAmount = parseFloat(bet.betAmount) || 0
     const newBalance = currentBalance + refundAmount
@@ -201,13 +359,27 @@ betRouter.put('/cancel/:betId', async (request, response) => {
 })
 
 // Get pending bets for a user
-betRouter.get('/pending/:userId', async (request, response) => {
+betRouter.get('/pending/:userId', requireAuth, async (request, response) => {
   try {
     const { userId } = request.params
     
+    // Validate userId
+    if (!isValidUUID(userId)) {
+      return response.status(400).json({ 
+        error: 'Invalid user ID format' 
+      })
+    }
+    
+    // Verify user can only access their own pending bets
+    if (!verifyUserOwnership(userId, request.user.id)) {
+      return response.status(403).json({ 
+        error: 'Access denied. You can only access your own pending bets.' 
+      })
+    }
+    
     const pendingBets = await Bet.findAll({
       where: {
-        userId: userId,
+        userId: request.user.id, // Use authenticated user ID
         status: 'pending'
       },
       order: [['eventDate', 'ASC']]
@@ -229,7 +401,15 @@ betRouter.put('/settle/:betId', requireAdmin, async (request, response) => {
     const { betId } = request.params
     const { result } = request.body // 'home_win' or 'away_win'
     
-    if (!result || !['home_win', 'away_win'].includes(result)) {
+    // Validate betId
+    if (!isValidUUID(betId)) {
+      return response.status(400).json({ 
+        error: 'Invalid bet ID format' 
+      })
+    }
+    
+    // Validate result
+    if (!result || !isValidBetType(result)) {
       return response.status(400).json({ 
         error: 'Invalid result. Must be "home_win" or "away_win"' 
       })
@@ -295,7 +475,15 @@ betRouter.put('/settle-event/:eventId', requireAdmin, async (request, response) 
     const { eventId } = request.params
     const { result } = request.body // 'home_win' or 'away_win'
     
-    if (!result || !['home_win', 'away_win'].includes(result)) {
+    // Validate eventId
+    if (!isValidEventId(eventId)) {
+      return response.status(400).json({ 
+        error: 'Invalid event ID format' 
+      })
+    }
+    
+    // Validate result
+    if (!result || !isValidBetType(result)) {
       return response.status(400).json({ 
         error: 'Invalid result. Must be "home_win" or "away_win"' 
       })
@@ -376,8 +564,18 @@ betRouter.get('/admin/pending', requireAdmin, async (request, response) => {
   try {
     const { eventId, limit = 100, offset = 0 } = request.query
     
+    // Validate and sanitize query parameters
+    const validatedLimit = validateInteger(limit, 1, 1000) || 100
+    const validatedOffset = validateInteger(offset, 0, 10000) || 0
+    
     const whereClause = { status: 'pending' }
     if (eventId) {
+      // Validate eventId if provided
+      if (!isValidEventId(eventId)) {
+        return response.status(400).json({ 
+          error: 'Invalid event ID format' 
+        })
+      }
       whereClause.eventId = eventId
     }
     
@@ -388,14 +586,14 @@ betRouter.get('/admin/pending', requireAdmin, async (request, response) => {
         attributes: ['id', 'username', 'email']
       }],
       order: [['eventDate', 'ASC']],
-      limit: parseInt(limit),
-      offset: parseInt(offset)
+      limit: validatedLimit,
+      offset: validatedOffset
     })
     
     response.json({
       data: pendingBets.rows,
       total: pendingBets.count,
-      hasMore: (parseInt(offset) + parseInt(limit)) < pendingBets.count
+      hasMore: (validatedOffset + validatedLimit) < pendingBets.count
     })
   } catch (error) {
     console.error('Error fetching pending bets:', error)
