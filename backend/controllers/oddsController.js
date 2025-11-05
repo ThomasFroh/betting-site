@@ -3,6 +3,7 @@ const { Op } = require('sequelize')
 const oddsRouter = require('express').Router()
 const config = require('../utils/config')
 const GameOdds = require('../models/gameOdds')
+const { isValidSport, isValidEventId } = require('../utils/validation')
 
 const ODDS_API_BASE_URL = 'https://api.the-odds-api.com/v4'
 
@@ -35,6 +36,14 @@ oddsRouter.get('/sports', async (request, response) => {
 oddsRouter.get('/:sport/odds', async (request, response) => {
   try {
     const { sport } = request.params
+    
+    // Validate sport parameter
+    if (!isValidSport(sport)) {
+      return response.status(400).json({ 
+        error: 'Invalid sport. Allowed sports: americanfootball_nfl, americanfootball_ncaaf, basketball_nba, mma_mixed_martial_arts' 
+      })
+    }
+    
     const now = new Date()
     const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000)
 
@@ -73,6 +82,14 @@ oddsRouter.get('/:sport/odds', async (request, response) => {
 oddsRouter.get('/events/:eventId', async (request, response) => {
   try {
     const { eventId } = request.params
+    
+    // Validate eventId
+    if (!isValidEventId(eventId)) {
+      return response.status(400).json({ 
+        error: 'Invalid event ID format' 
+      })
+    }
+    
     const { 
       regions = 'us', 
       markets = 'h2h,spreads', 
