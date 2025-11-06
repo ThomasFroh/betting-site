@@ -16,12 +16,12 @@ const SPORTS = [
 
 /**
  * Fetch and store odds for a specific sport
- * Fetches odds for events in the next 3 days
+ * Fetches odds for events in the next 6 days
  */
 async function fetchAndStoreOddsForSport(sport) {
   try {
     const now = new Date()
-    const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000)
+    const sixDaysFromNow = new Date(now.getTime() + 6 * 24 * 60 * 60 * 1000)
     
     console.log(`Fetching odds for ${sport}...`)
     
@@ -43,8 +43,8 @@ async function fetchAndStoreOddsForSport(sport) {
     for (const event of apiOdds) {
       const commenceTime = new Date(event.commence_time)
       
-      // Only store events within the next 3 days and in the future
-      if (commenceTime >= now && commenceTime <= threeDaysFromNow) {
+      // Only store events within the next 6 days and in the future
+      if (commenceTime >= now && commenceTime <= sixDaysFromNow) {
         await GameOdds.upsert({
           eventId: event.id,
           sport: sport,
@@ -62,13 +62,13 @@ async function fetchAndStoreOddsForSport(sport) {
       }
     }
     
-    // Clean up old events (older than now or beyond 3 days)
+    // Clean up old events (older than now or beyond 6 days)
     const deletedCount = await GameOdds.destroy({
       where: {
         sport: sport,
         [Op.or]: [
           { commenceTime: { [Op.lt]: now } },
-          { commenceTime: { [Op.gt]: threeDaysFromNow } }
+          { commenceTime: { [Op.gt]: sixDaysFromNow } }
         ]
       }
     })
@@ -97,7 +97,7 @@ async function fetchAndStoreOddsForSport(sport) {
  */
 async function fetchAndStoreAllOdds() {
   try {
-    console.log('Starting scheduled odds fetch for next 3 days...')
+    console.log('Starting scheduled odds fetch for next 6 days...')
     const startTime = Date.now()
     
     const results = []

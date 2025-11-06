@@ -45,15 +45,15 @@ oddsRouter.get('/:sport/odds', async (request, response) => {
     }
     
     const now = new Date()
-    const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000)
+    const sixDaysFromNow = new Date(now.getTime() + 6 * 24 * 60 * 60 * 1000)
 
-    // Fetch odds from database only (filtered by commenceTime >= now and <= 3 days)
+    // Fetch odds from database only (filtered by commenceTime >= now and <= 6 days)
     const storedOdds = await GameOdds.findAll({
       where: {
         sport: sport,
         commenceTime: {
           [Op.gte]: now, // Only future events
-          [Op.lte]: threeDaysFromNow // Within next 3 days
+          [Op.lte]: sixDaysFromNow // Within next 6 days
         }
       },
       order: [['commenceTime', 'ASC']]
@@ -63,7 +63,7 @@ oddsRouter.get('/:sport/odds', async (request, response) => {
     
     console.log(`Returning ${oddsData.length} stored odds for ${sport} (from database)`)
     
-    // Return the odds data (already filtered by commenceTime >= now and <= 3 days)
+    // Return the odds data (already filtered by commenceTime >= now and <= 6 days)
     response.json({
       data: oddsData,
       remainingRequests: null, // Not available when reading from DB
