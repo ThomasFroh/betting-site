@@ -4,6 +4,7 @@ const cors = require('cors')
 const loginRouter = require('./controllers/loginController')
 const oddsRouter = require('./controllers/oddsController')
 const betRouter = require('./controllers/betController')
+const predictionRouter = require('./controllers/predictionController')
 const logger = require('./utils/logger')
 const middleware = require('./utils/middleware')
 const { initializeScheduler } = require('./utils/scheduler')
@@ -18,6 +19,7 @@ app.use(express.json())
 app.use('/api/login', loginRouter)
 app.use('/api/odds', oddsRouter)
 app.use('/api/bets', betRouter)
+app.use('/api/predictions', predictionRouter)
 
 // Serve React dist in production
 if (config.NODE_ENV === 'production') {
